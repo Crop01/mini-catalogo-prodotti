@@ -1,59 +1,50 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+Mini Catalogo Prodotti
+Obiettivo: realizzare una piccola applicazione full-stack (frontend + backend + database) per la gestione di un catalogo prodotti con categorie.
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Requisiti
+Funzionalità
+Prodotti
 
-## About Laravel
+Campi minimi: id, name, price, category_id, tags, created_at.
+Operazioni: list, get by id, create, update, delete.
+List: ricerca testuale, filtro per categoria, filtro per prezzo minimo/massimo, ordinamento per prezzo o data di creazione, paginazione.
+Validazioni: name obbligatorio; price ≥ 0; category_id valido se presente.
+Categorie
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Campi minimi: id, name.
+Operazioni: list, create.
+Frontend
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Vista elenco prodotti con ricerca/filtri/ordinamento/paginazione.
+Form creazione/modifica prodotto.
+Visualizzazione chiara degli stati (caricamento/errore/successo).
+Backend
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+API REST con routing chiaro e status code coerenti.
+Filtri, ordinamento e paginazione gestiti lato server.
+Database
 
-## Learning Laravel
+Persistenza relazionale (PostgreSQL consigliato; in alternativa SQLite).
+Migrazioni o script di inizializzazione.
+Avvio
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
-
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-## Laravel Sponsors
-
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
-
-### Premium Partners
-
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Preferibile utilizzo di Docker/Docker Compose per avvio rapido (app + DB).
+Variabili di ambiente tramite file dedicato (es. .env.example).
+Consegna (obbligatoria su GitHub)
+Pubblica il progetto in una repository GitHub (pubblica o privata con accesso fornito su richiesta).
+Includi:
+Codice frontend e backend.
+README.md con istruzioni di avvio (Docker e avvio locale), configurazione variabili, comandi per migrazioni/seed, e comandi test.
+docker-compose.yml e relativi Dockerfile.
+Migrazioni o script DB; file .env.example.
+Usa commit granulari con messaggi chiari; evita un unico commit cumulativo.
+Tagga una release (es. v0.1) o fornisci branch di consegna dedicata.
+Vincoli
+Stack: a scelta (linguaggi e framework liberi).
+Qualità attesa: struttura chiara, coerenza stilistica, gestione errori, documentazione minima essenziale.
+Criteri di valutazione
+Completezza funzionale
+Qualità e organizzazione del codice
+Correttezza API e validazioni
+UX essenziale del frontend
+Developer Experience (README, avvio rapido, migrazioni/test di base)
