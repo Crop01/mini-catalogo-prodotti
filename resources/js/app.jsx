@@ -1,12 +1,14 @@
 import './bootstrap';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import ProductList from './pages/ProductList';
 
 function App() {
     return (
-        <h1>
-            Prova
-        </h1>
+        <div className="bg-gray-100 min-h-screen text-gray-900">
+             {/* In the future, I will add the Router here, for now I show the list directly */}
+            <ProductList />
+        </div>
     );
 }
 

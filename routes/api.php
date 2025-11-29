@@ -9,10 +9,10 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-// Rotta categorie
+// Categories routes
 Route::get('/categories', function () {
     return Category::all();
 });
 
-// Rotte prodotti
+// Products routes
 Route::apiResource('products', ProductController::class);
