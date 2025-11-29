@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // Aggiunto useCallback
 import api from '../services/api';
+import ProductForm from './ProductForm'; // <--- 1. Importiamo il Form
 
-
-// Custom hook for debounce (used for search input)
+// Custom hook debounce
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
     useEffect(() => {
@@ -13,16 +13,21 @@ function useDebounce(value, delay) {
 }
 
 export default function ProductList() {
+    // --- STATI DATI ---
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [meta, setMeta] = useState({});
 
-    const[searchTerm, setSearchTerm] = useState('');
+    // --- STATI MODALE (Nuovi) ---
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingId, setEditingId] = useState(null);
+
+    // --- STATI FILTRI ---
+    const [searchTerm, setSearchTerm] = useState('');
     const debouncedSearch = useDebounce(searchTerm, 300);
-    
-    // Grouping all filters in a single state object
+
     const [filters, setFilters] = useState({
-        search: '',
         category_id: '',
         min_price: '',
         sort_by: 'created_at',
@@ -30,50 +35,80 @@ export default function ProductList() {
         page: 1
     });
 
-    const [meta, setMeta] = useState({}); // Pagination metadata
-
-    // Fetch categories on mount
+    // Caricamento Categorie
     useEffect(() => {
         api.getCategories().then(res => setCategories(res.data));
     }, []);
 
-    // Update filter handler
+    // --- FUNZIONE FETCH (Spostata fuori per poterla riusare) ---
+    // Usiamo useCallback per evitare che la funzione venga ricreata a ogni render
+    const fetchProducts = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const params = {
+                ...filters,
+                search: debouncedSearch,
+            };
+
+            // Pulizia parametri
+            Object.keys(params).forEach(key => {
+                if (params[key] === '' || params[key] === null) delete params[key];
+            });
+
+            const { data } = await api.getProducts(params);
+            setProducts(data.data);
+            setMeta({
+                current_page: data.current_page,
+                last_page: data.last_page,
+                total: data.total
+            });
+        } catch (error) {
+            console.error("Errore API", error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [filters, debouncedSearch]); 
+
+    // Trigger Fetch quando cambiano i filtri
     useEffect(() => {
-        const fetchProducts = async () => {
-            setIsLoading(true);
-            try {
-                const params = {
-                    ...filters,
-                    search: debouncedSearch, // Usiamo la versione "ritardata"
-                };
-
-                // Clean empty params
-                Object.keys(params).forEach(key => {
-                    if (params[key] === '' || params[key] === null) delete params[key];
-                });
-
-                const { data } = await api.getProducts(params);
-                setProducts(data.data);
-                setMeta({
-                    current_page: data.current_page,
-                    last_page: data.last_page,
-                    total: data.total
-                });
-            } catch (error) {
-                console.error("Errore API", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
         fetchProducts();
-    }, [debouncedSearch, filters]); // Rfetch when debounced search or filters change
+    }, [fetchProducts]); 
 
-    // Gestori eventi
-    const handleSearch = (e) => {
-        setSearchTerm(e.target.value); // Update search term for debounce
+    // --- HANDLERS (Gestori Eventi) ---
+
+    // 1. Apertura Modale (Creazione)
+    const handleCreate = () => {
+        setEditingId(null); // ID null = Creazione
+        setIsModalOpen(true);
     };
 
+    // 2. Apertura Modale (Modifica)
+    const handleEdit = (id) => {
+        setEditingId(id); // ID presente = Modifica
+        setIsModalOpen(true);
+    };
+
+    // 3. Cancellazione
+    const handleDelete = async (id) => {
+        if (!window.confirm("Sei sicuro di voler eliminare questo prodotto?")) return;
+
+        try {
+            await api.deleteProduct(id);
+            fetchProducts(); // Ricarica la lista dopo la cancellazione
+        } catch (error) {
+            alert("Errore durante l'eliminazione");
+        }
+    };
+
+    // 4. Callback dopo salvataggio (chiudi e aggiorna)
+    const handleFormSuccess = () => {
+        setIsModalOpen(false);
+        fetchProducts(); // Ricarica la lista per vedere le modifiche
+    };
+
+    // Gestori UI Filtri
+    const handleSearch = (e) => setSearchTerm(e.target.value);
+    
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
         setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
@@ -85,23 +120,30 @@ export default function ProductList() {
 
     return (
         <div className="p-6 max-w-7xl mx-auto">
-            <h1 className="text-3xl font-bold mb-6 text-gray-800">Catalogo Prodotti</h1>
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-3xl font-bold text-gray-800">Catalogo Prodotti</h1>
+                {/* Bottone Nuovo Prodotto collegato */}
+                <button 
+                    onClick={handleCreate}
+                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+                >
+                    + Nuovo Prodotto
+                </button>
+            </div>
 
+            {/* Filtri */}
             <div className="bg-white p-4 rounded-lg shadow mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
                 <input 
                     type="text" 
-                    name="search"
                     placeholder="Cerca..." 
                     className="border p-2 rounded"
                     value={searchTerm}
                     onChange={handleSearch}
                 />
-
                 <select name="category_id" className="border p-2 rounded" value={filters.category_id} onChange={handleFilterChange}>
                     <option value="">Tutte le Categorie</option>
                     {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
-
                 <input 
                     type="number" 
                     name="min_price"
@@ -110,7 +152,6 @@ export default function ProductList() {
                     value={filters.min_price}
                     onChange={handleFilterChange}
                 />
-
                 <select name="sort_by" className="border p-2 rounded" value={filters.sort_by} onChange={handleFilterChange}>
                     <option value="created_at">Più recenti</option>
                     <option value="price">Prezzo</option>
@@ -118,6 +159,7 @@ export default function ProductList() {
                 </select>
             </div>
 
+            {/* Tabella */}
             {isLoading ? (
                 <div className="text-center py-10 opacity-50">Caricamento...</div>
             ) : (
@@ -129,6 +171,7 @@ export default function ProductList() {
                                 <th className="p-4">Categoria</th>
                                 <th className="p-4">Prezzo</th>
                                 <th className="p-4">Tags</th>
+                                <th className="p-4">Azioni</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -142,39 +185,66 @@ export default function ProductList() {
                                     </td>
                                     <td className="p-4 font-mono">€ {p.price}</td>
                                     <td className="p-4">
-                                        {p.tags?.map(t => (
-                                            <span key={t} className="mr-1 text-gray-500 text-xs bg-gray-100 px-1 rounded">#{t}</span>
+                                        {p.tags?.map((t, i) => (
+                                            <span key={i} className="mr-1 text-gray-500 text-xs bg-gray-100 px-1 rounded">#{t}</span>
                                         ))}
+                                    </td>
+                                    <td className="p-4 text-sm">
+                                        {/* Bottoni Modifica / Elimina Collegati */}
+                                        <button 
+                                            onClick={() => handleEdit(p.id)}
+                                            className="text-blue-600 hover:underline mr-3"
+                                        >
+                                            Edit
+                                        </button>
+                                        <button 
+                                            onClick={() => handleDelete(p.id)}
+                                            className="text-red-600 hover:underline"
+                                        >
+                                            Delete
+                                        </button>
                                     </td>
                                 </tr>
                             )) : (
                                 <tr>
-                                    <td colSpan="4" className="p-4 text-center text-gray-500">Nessun prodotto trovato.</td>
+                                    <td colSpan="5" className="p-4 text-center text-gray-500">Nessun prodotto trovato.</td>
                                 </tr>
                             )}
                         </tbody>
                     </table>
                     
-                    <div className="p-4 flex justify-between items-center bg-gray-50">
-                        <button 
-                            disabled={meta.current_page === 1}
-                            onClick={() => changePage(meta.current_page - 1)}
-                            className="px-3 py-1 border rounded bg-white disabled:opacity-50 hover:bg-gray-50"
-                        >
-                            Indietro
-                        </button>
-                        <span className="text-sm text-gray-600">
-                            Pagina {meta.current_page} di {meta.last_page}
-                        </span>
-                        <button 
-                            disabled={meta.current_page === meta.last_page}
-                            onClick={() => changePage(meta.current_page + 1)}
-                            className="px-3 py-1 border rounded bg-white disabled:opacity-50 hover:bg-gray-50"
-                        >
-                            Avanti
-                        </button>
-                    </div>
+                    {/* Paginazione */}
+                    {meta.last_page > 1 && (
+                        <div className="p-4 flex justify-between items-center bg-gray-50">
+                            <button 
+                                disabled={meta.current_page === 1}
+                                onClick={() => changePage(meta.current_page - 1)}
+                                className="px-3 py-1 border rounded bg-white disabled:opacity-50 hover:bg-gray-50"
+                            >
+                                Indietro
+                            </button>
+                            <span className="text-sm text-gray-600">
+                                Pagina {meta.current_page} di {meta.last_page}
+                            </span>
+                            <button 
+                                disabled={meta.current_page === meta.last_page}
+                                onClick={() => changePage(meta.current_page + 1)}
+                                className="px-3 py-1 border rounded bg-white disabled:opacity-50 hover:bg-gray-50"
+                            >
+                                Avanti
+                            </button>
+                        </div>
+                    )}
                 </div>
+            )}
+
+            {/* MODALE DI CREAZIONE/MODIFICA */}
+            {isModalOpen && (
+                <ProductForm 
+                    productId={editingId} 
+                    onSuccess={handleFormSuccess} 
+                    onCancel={() => setIsModalOpen(false)} 
+                />
             )}
         </div>
     );
