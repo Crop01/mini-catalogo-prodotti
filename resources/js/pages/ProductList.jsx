@@ -1,10 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 
+
+// Custom hook for debounce (used for search input)
+function useDebounce(value, delay) {
+    const [debouncedValue, setDebouncedValue] = useState(value);
+    useEffect(() => {
+        const handler = setTimeout(() => setDebouncedValue(value), delay);
+        return () => clearTimeout(handler);
+    }, [value, delay]);
+    return debouncedValue;
+}
+
 export default function ProductList() {
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
+
+    const[searchTerm, setSearchTerm] = useState('');
+    const debouncedSearch = useDebounce(searchTerm, 300);
     
     // Grouping all filters in a single state object
     const [filters, setFilters] = useState({
@@ -16,55 +30,51 @@ export default function ProductList() {
         page: 1
     });
 
-    const [meta, setMeta] = useState({}); // "meta" is a standard term for pagination data
+    const [meta, setMeta] = useState({}); // Pagination metadata
 
+    // Fetch categories on mount
     useEffect(() => {
-        // Initial loading of categories
-        const loadCategories = async () => {
-            try {
-                const { data } = await api.getCategories();
-                setCategories(data);
-            } catch (e) {
-                console.error(e);
-            }
-        };
-        loadCategories();
+        api.getCategories().then(res => setCategories(res.data));
     }, []);
 
+    // Update filter handler
     useEffect(() => {
-        // Fetch products whenever filters change, timeout for better UX
-        const timer = setTimeout(() => {
-            fetchProducts();
-        }, 300); 
+        const fetchProducts = async () => {
+            setIsLoading(true);
+            try {
+                const params = {
+                    ...filters,
+                    search: debouncedSearch, // Usiamo la versione "ritardata"
+                };
 
-        return () => clearTimeout(timer);
-    }, [filters]);
+                // Clean empty params
+                Object.keys(params).forEach(key => {
+                    if (params[key] === '' || params[key] === null) delete params[key];
+                });
 
-    const fetchProducts = async () => {
-        setIsLoading(true);
-        try {
-            // Remove empty keys
-            const params = {};
-            Object.keys(filters).forEach(key => {
-                if (filters[key]) params[key] = filters[key];
-            });
+                const { data } = await api.getProducts(params);
+                setProducts(data.data);
+                setMeta({
+                    current_page: data.current_page,
+                    last_page: data.last_page,
+                    total: data.total
+                });
+            } catch (error) {
+                console.error("Errore API", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
 
-            const { data } = await api.getProducts(params);
-            
-            setProducts(data.data);
-            setMeta({
-                current_page: data.current_page,
-                last_page: data.last_page,
-                total: data.total
-            });
-        } catch (error) {
-            console.error("API Error:", error);
-        } finally {
-            setIsLoading(false);
-        }
+        fetchProducts();
+    }, [debouncedSearch, filters]); // Rfetch when debounced search or filters change
+
+    // Gestori eventi
+    const handleSearch = (e) => {
+        setSearchTerm(e.target.value); // Update search term for debounce
     };
 
-    const updateFilter = (e) => {
+    const handleFilterChange = (e) => {
         const { name, value } = e.target;
         setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
     };
@@ -83,11 +93,11 @@ export default function ProductList() {
                     name="search"
                     placeholder="Cerca..." 
                     className="border p-2 rounded"
-                    value={filters.search}
-                    onChange={updateFilter}
+                    value={searchTerm}
+                    onChange={handleSearch}
                 />
 
-                <select name="category_id" className="border p-2 rounded" value={filters.category_id} onChange={updateFilter}>
+                <select name="category_id" className="border p-2 rounded" value={filters.category_id} onChange={handleFilterChange}>
                     <option value="">Tutte le Categorie</option>
                     {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
@@ -98,10 +108,10 @@ export default function ProductList() {
                     placeholder="Min €" 
                     className="border p-2 rounded"
                     value={filters.min_price}
-                    onChange={updateFilter}
+                    onChange={handleFilterChange}
                 />
 
-                <select name="sort_by" className="border p-2 rounded" value={filters.sort_by} onChange={updateFilter}>
+                <select name="sort_by" className="border p-2 rounded" value={filters.sort_by} onChange={handleFilterChange}>
                     <option value="created_at">Più recenti</option>
                     <option value="price">Prezzo</option>
                     <option value="name">Nome</option>
