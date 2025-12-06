@@ -182,90 +182,122 @@ export default function ProductList() {
                     </select>
                 </div>
 
-                {/* Data Grid / Table Section */}
-                {isLoading ? (
-                    <div className="text-center py-20">
-                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent"></div>
-                        <p className="mt-2 text-slate-500 text-sm">Caricamento...</p>
-                    </div>
-                ) : (
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                        <table className="w-full text-left border-collapse">
-                            <thead className="bg-slate-50 border-b border-slate-200">
-                                <tr>
-                                    <th className="p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Prodotto</th>
-                                    <th className="p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Categoria</th>
-                                    <th className="p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Prezzo</th>
-                                    <th className="p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Tags</th>
-                                    <th className="p-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Azioni</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {products.length > 0 ? products.map(p => (
-                                    <tr key={p.id} className="hover:bg-slate-50 transition-colors">
-                                        <td className="p-4 font-medium text-slate-900">{p.name}</td>
-                                        <td className="p-4">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
-                                                {p.category?.name || 'N/A'}
-                                            </span>
-                                        </td>
-                                        <td className="p-4 font-mono text-slate-600">€ {p.price}</td>
-                                        <td className="p-4">
-                                            {p.tags?.map((t, i) => (
-                                                <span key={i} className="mr-1.5 text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
-                                                    #{t}
-                                                </span>
-                                            ))}
-                                        </td>
-                                        <td className="p-4 text-right space-x-2">
-                                            <button 
-                                                onClick={() => handleEdit(p.id)}
-                                                className="text-sm font-medium text-indigo-600 hover:text-indigo-900 transition-colors"
-                                            >
-                                                Modifica
-                                            </button>
-                                            <button 
-                                                onClick={() => handleDelete(p.id)}
-                                                className="text-sm font-medium text-rose-600 hover:text-rose-900 transition-colors"
-                                            >
-                                                Elimina
-                                            </button>
-                                        </td>
-                                    </tr>
-                                )) : (
-                                    <tr>
-                                        <td colSpan="5" className="p-8 text-center text-slate-500">
-                                            Nessun prodotto trovato.
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                        
-                        {/* Pagination Footer */}
-                        {meta.last_page > 1 && (
-                            <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-between items-center">
-                                <button 
-                                    disabled={meta.current_page === 1}
-                                    onClick={() => changePage(meta.current_page - 1)}
-                                    className="px-3 py-1.5 border border-slate-300 rounded-md bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    Indietro
-                                </button>
-                                <span className="text-sm text-slate-500">
-                                    Pagina <span className="font-medium text-slate-900">{meta.current_page}</span> di {meta.last_page}
-                                </span>
-                                <button 
-                                    disabled={meta.current_page === meta.last_page}
-                                    onClick={() => changePage(meta.current_page + 1)}
-                                    className="px-3 py-1.5 border border-slate-300 rounded-md bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    Avanti
-                                </button>
+                {/* Data Grid Section */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    {isLoading ? (
+                        // Skeleton Loader (Stripe Style)
+                        <div className="p-4 space-y-4 animate-pulse">
+                            {[...Array(5)].map((_, i) => (
+                                <div key={i} className="flex items-center space-x-4 border-b border-slate-100 pb-4 last:border-0">
+                                    <div className="h-4 bg-slate-200 rounded w-1/4"></div>
+                                    <div className="h-4 bg-slate-200 rounded w-1/6"></div>
+                                    <div className="h-4 bg-slate-200 rounded w-1/6"></div>
+                                    <div className="h-4 bg-slate-200 rounded w-1/3"></div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="bg-slate-50/50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
+                                            <th className="px-6 py-4">Prodotto</th>
+                                            <th className="px-6 py-4">Categoria</th>
+                                            <th className="px-6 py-4">Prezzo</th>
+                                            <th className="px-6 py-4">Tags</th>
+                                            <th className="px-6 py-4 text-right">Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 bg-white">
+                                        {products.length > 0 ? products.map(p => (
+                                            <tr key={p.id} className="hover:bg-slate-50/80 transition-colors duration-150 group">
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="font-medium text-slate-900">{p.name}</div>
+                                                    <div className="text-xs text-slate-400 hidden group-hover:block transition-all">
+                                                        ID: #{p.id}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                                                        {p.category?.name || 'N/A'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap font-mono text-sm text-slate-600 tabular-nums">
+                                                    € {Number(p.price).toFixed(2)}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {p.tags?.map((t, i) => (
+                                                            <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                                                {t}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                                                    <div className="flex items-center justify-end gap-3 opacity-80 group-hover:opacity-100 transition-opacity">
+                                                        <button 
+                                                            onClick={() => handleEdit(p.id)}
+                                                            className="font-medium text-indigo-600 hover:text-indigo-900 transition-colors"
+                                                        >
+                                                            Modifica
+                                                        </button>
+                                                        <span className="text-slate-300">|</span>
+                                                        <button 
+                                                            onClick={() => handleDelete(p.id)}
+                                                            className="font-medium text-rose-600 hover:text-rose-900 transition-colors"
+                                                        >
+                                                            Elimina
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )) : (
+                                            <tr>
+                                                <td colSpan="5" className="px-6 py-12 text-center">
+                                                    <div className="mx-auto h-12 w-12 text-slate-300 mb-3">
+                                                        {/* Inline SVG icon for empty state */}
+                                                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                                        </svg>
+                                                    </div>
+                                                    <h3 className="text-sm font-medium text-slate-900">Nessun prodotto trovato</h3>
+                                                    <p className="text-sm text-slate-500 mt-1">Prova a modificare i filtri o la ricerca.</p>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
                             </div>
-                        )}
-                    </div>
-                )}
+
+                            {/* Pagination Footer */}
+                            {meta.last_page > 1 && (
+                                <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+                                    <span className="text-sm text-slate-500">
+                                        Pagina <span className="font-semibold text-slate-900">{meta.current_page}</span> di {meta.last_page}
+                                    </span>
+                                    <div className="flex gap-2">
+                                        <button 
+                                            disabled={meta.current_page === 1}
+                                            onClick={() => changePage(meta.current_page - 1)}
+                                            className="px-3 py-1 text-sm font-medium rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                                        >
+                                            Precedente
+                                        </button>
+                                        <button 
+                                            disabled={meta.current_page === meta.last_page}
+                                            onClick={() => changePage(meta.current_page + 1)}
+                                            className="px-3 py-1 text-sm font-medium rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                                        >
+                                            Successivo
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
             </div>
             
             {/* Modal Injection */}
