@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'; // added useCallback
 import api from '../services/api';
 import ProductForm from './ProductForm';
+import DeleteModal from './DeleteModal';
 
 // Custom hook debounce
 function useDebounce(value, delay) {
@@ -18,11 +19,17 @@ export default function ProductList() {
     const [isLoading, setIsLoading] = useState(false);
     const [meta, setMeta] = useState({});
 
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
 
     const [searchTerm, setSearchTerm] = useState('');
     const debouncedSearch = useDebounce(searchTerm, 300);
+
+    const [deleteModal, setDeleteModal] = useState({ 
+        isOpen: false, 
+        productId: null, 
+        productName: '' 
+    });
 
     const [filters, setFilters] = useState({
         category_id: '',
@@ -73,33 +80,42 @@ export default function ProductList() {
 
     // Event Handlers
 
-    // 1. Open Modal (Create)
+    // Open Modal (Create)
     const handleCreate = () => {
         setEditingId(null); // ID null = Create
-        setIsModalOpen(true);
+        setIsFormOpen(true);
     };
 
-    // 2. Open Modal (Edit)
+    // Open Modal (Edit)
     const handleEdit = (id) => {
         setEditingId(id); // ID present = Edit
-        setIsModalOpen(true);
+        setIsFormOpen(true);
     };
 
-    // 3. Delete
-    const handleDelete = async (id) => {
-        if (!window.confirm("Sei sicuro di voler eliminare questo prodotto?")) return;
+    // Delete
+    const handleDeleteClick = (product) => {
+        setDeleteModal({
+            isOpen: true,
+            productId: product.id,
+            productName: product.name
+        });
+    };
 
+    // Confirm Delete -> call API
+    const confirmDelete = async () => {
+        if (!deleteModal.productId) return;
         try {
-            await api.deleteProduct(id);
-            fetchProducts(); // Reload the list after deletion
+            await api.deleteProduct(deleteModal.productId);
+            setDeleteModal({ ...deleteModal, isOpen: false }); // Chiudi modale
+            fetchProducts(); // Ricarica lista
         } catch (error) {
             alert("Errore durante l'eliminazione");
         }
     };
-
-    // 4. Callback after form success
+    
+    // Callback after form success
     const handleFormSuccess = () => {
-        setIsModalOpen(false);
+        setIsFormOpen(false);
         fetchProducts(); // Reload the list to see changes
     };
 
@@ -121,7 +137,7 @@ export default function ProductList() {
                 {/* Header Section */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                     <div>
-                        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
+                        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
                             Prodotti
                         </h1>
                         <p className="text-sm text-slate-500 mt-1">
@@ -131,7 +147,7 @@ export default function ProductList() {
                     
                     <button 
                         onClick={handleCreate}
-                        className="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                        className="btn-primary"
                     >
                         + Nuovo Prodotto
                     </button>
@@ -140,42 +156,41 @@ export default function ProductList() {
                 {/* Filters Section */}
                 <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
                     {/* Search Input */}
-                    <input 
-                        type="text" 
-                        placeholder="Cerca prodotti..." 
-                        className="border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-indigo-500 w-full"
-                        value={searchTerm}
-                        onChange={handleSearch}
-                    />
+                    <div className="relative">
+                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg className="h-5 w-5 text-slate-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <input 
+                            type="text" 
+                            placeholder="Cerca prodotti..." 
+                            className="input-base pl-10 text-sm"
+                            value={searchTerm}
+                            onChange={handleSearch}
+                        />
+                    </div>
 
-                    {/* Category Select */}
-                    <select 
-                        name="category_id" 
-                        className="border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-indigo-500 w-full" 
-                        value={filters.category_id} 
-                        onChange={handleFilterChange}
-                    >
+                    <select name="category_id" className="input-base text-sm" value={filters.category_id} onChange={handleFilterChange}>
                         <option value="">Tutte le Categorie</option>
                         {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
 
-                    {/* Min Price Input */}
-                    <input 
-                        type="number" 
-                        name="min_price"
-                        placeholder="Prezzo Min €" 
-                        className="border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-indigo-500 w-full"
-                        value={filters.min_price}
-                        onChange={handleFilterChange}
-                    />
+                    <div className="relative">
+                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span className="text-slate-400 sm:text-sm">€</span>
+                        </div>
+                        <input 
+                            type="number" 
+                            name="min_price"
+                            placeholder="Prezzo Min" 
+                            className="input-base pl-8 text-sm"
+                            value={filters.min_price}
+                            onChange={handleFilterChange}
+                        />
+                    </div>
 
-                    {/* Sort Select */}
-                    <select 
-                        name="sort_by" 
-                        className="border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-indigo-500 w-full" 
-                        value={filters.sort_by} 
-                        onChange={handleFilterChange}
-                    >
+                    <select name="sort_by" className="input-base text-sm" value={filters.sort_by} onChange={handleFilterChange}>
                         <option value="created_at">Più recenti</option>
                         <option value="price">Prezzo</option>
                         <option value="name">Nome (A-Z)</option>
@@ -185,14 +200,13 @@ export default function ProductList() {
                 {/* Data Grid Section */}
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                     {isLoading ? (
-                        // Skeleton Loader (Stripe Style)
-                        <div className="p-4 space-y-4 animate-pulse">
+                        <div className="p-6 space-y-6 animate-pulse">
                             {[...Array(5)].map((_, i) => (
-                                <div key={i} className="flex items-center space-x-4 border-b border-slate-100 pb-4 last:border-0">
-                                    <div className="h-4 bg-slate-200 rounded w-1/4"></div>
-                                    <div className="h-4 bg-slate-200 rounded w-1/6"></div>
-                                    <div className="h-4 bg-slate-200 rounded w-1/6"></div>
-                                    <div className="h-4 bg-slate-200 rounded w-1/3"></div>
+                                <div key={i} className="flex items-center space-x-6 border-b border-slate-100 pb-6 last:border-0">
+                                    <div className="h-5 bg-slate-200 rounded w-1/4"></div>
+                                    <div className="h-5 bg-slate-200 rounded w-1/6"></div>
+                                    <div className="h-5 bg-slate-200 rounded w-1/6"></div>
+                                    <div className="h-5 bg-slate-200 rounded w-1/3"></div>
                                 </div>
                             ))}
                         </div>
@@ -211,12 +225,9 @@ export default function ProductList() {
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 bg-white">
                                         {products.length > 0 ? products.map(p => (
-                                            <tr key={p.id} className="hover:bg-slate-50/80 transition-colors duration-150 group">
+                                            <tr key={p.id} className="hover:bg-slate-50/50 transition-colors duration-150 group">
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="font-medium text-slate-900">{p.name}</div>
-                                                    <div className="text-xs text-slate-400 hidden group-hover:block transition-all">
-                                                        ID: #{p.id}
-                                                    </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
@@ -229,24 +240,25 @@ export default function ProductList() {
                                                 <td className="px-6 py-4">
                                                     <div className="flex flex-wrap gap-1.5">
                                                         {p.tags?.map((t, i) => (
-                                                            <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                                            <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide bg-primary-50 text-primary-700 border border-primary-100">
                                                                 {t}
                                                             </span>
                                                         ))}
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                                                    <div className="flex items-center justify-end gap-3 opacity-80 group-hover:opacity-100 transition-opacity">
+                                                    {/* BOTTONI ORA VISIBILI (rimosso opacity-0) */}
+                                                    <div className="flex items-center justify-end gap-3">
                                                         <button 
                                                             onClick={() => handleEdit(p.id)}
-                                                            className="font-medium text-indigo-600 hover:text-indigo-900 transition-colors"
+                                                            className="font-medium text-slate-500 hover:text-primary-600 transition-colors"
                                                         >
                                                             Modifica
                                                         </button>
                                                         <span className="text-slate-300">|</span>
                                                         <button 
-                                                            onClick={() => handleDelete(p.id)}
-                                                            className="font-medium text-rose-600 hover:text-rose-900 transition-colors"
+                                                            onClick={() => handleDeleteClick(p)} // Nuova funzione
+                                                            className="font-medium text-slate-500 hover:text-rose-600 transition-colors"
                                                         >
                                                             Elimina
                                                         </button>
@@ -255,9 +267,8 @@ export default function ProductList() {
                                             </tr>
                                         )) : (
                                             <tr>
-                                                <td colSpan="5" className="px-6 py-12 text-center">
-                                                    <div className="mx-auto h-12 w-12 text-slate-300 mb-3">
-                                                        {/* Inline SVG icon for empty state */}
+                                                <td colSpan="5" className="px-6 py-16 text-center">
+                                                    <div className="mx-auto h-12 w-12 text-slate-300 mb-4">
                                                         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                                                         </svg>
@@ -281,14 +292,14 @@ export default function ProductList() {
                                         <button 
                                             disabled={meta.current_page === 1}
                                             onClick={() => changePage(meta.current_page - 1)}
-                                            className="px-3 py-1 text-sm font-medium rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                                            className="px-3 py-1.5 text-sm font-medium rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50"
                                         >
                                             Precedente
                                         </button>
                                         <button 
                                             disabled={meta.current_page === meta.last_page}
                                             onClick={() => changePage(meta.current_page + 1)}
-                                            className="px-3 py-1 text-sm font-medium rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                                            className="px-3 py-1.5 text-sm font-medium rounded-md border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50"
                                         >
                                             Successivo
                                         </button>
@@ -300,14 +311,22 @@ export default function ProductList() {
                 </div>
             </div>
             
-            {/* Modal Injection */}
-            {isModalOpen && (
+            {/* Modal Product Form */}
+            {isFormOpen && (
                 <ProductForm 
                     productId={editingId} 
                     onSuccess={handleFormSuccess} 
-                    onCancel={() => setIsModalOpen(false)} 
+                    onCancel={() => setIsFormOpen(false)} 
                 />
             )}
+
+            {/* Modal Delete Confirmation */}
+            <DeleteModal 
+                isOpen={deleteModal.isOpen}
+                productName={deleteModal.productName}
+                onClose={() => setDeleteModal({...deleteModal, isOpen: false})}
+                onConfirm={confirmDelete}
+            />
         </div>
     );
 }
