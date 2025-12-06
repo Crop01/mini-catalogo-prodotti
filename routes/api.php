@@ -9,9 +9,9 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-// Categories routes
+// Categories routes, with product count to optimize frontend
 Route::get('/categories', function () {
-    return Category::all();
+    return \App\Models\Category::withCount('products')->get();
 });
 
 // Products routes
