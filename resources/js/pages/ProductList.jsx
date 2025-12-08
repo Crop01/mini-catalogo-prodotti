@@ -189,9 +189,6 @@ export default function ProductList() {
         setIsFormOpen(false);
         fetchProducts(); // Reload the list to see changes
     };
-
-    // UI Filter Handlers
-    const handleSearch = (e) => setSearchTerm(e.target.value);
     
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
@@ -246,8 +243,8 @@ export default function ProductList() {
                             <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">
                                 Cerca
                             </label>
-                            <div className="relative group">
-                                <input type="text" placeholder="Nome, tag..." className="input-base" value={filters.search} onChange={handleFilterChange} />
+                            <div className="w-full">
+                                <input type="text" name="search" placeholder="Nome, tag..." className="input-base" value={filters.search} onChange={handleFilterChange} />
                             </div>
                         </div>
 

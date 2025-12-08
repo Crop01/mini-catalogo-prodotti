@@ -114,11 +114,15 @@ Aprire il browser su: [http://localhost](http://localhost)
 
 * **Feedback**: Niente schermate bianche o bloccate. Ho usato indicatori di caricamento (Spinner) centrali per la tabella e integrati nei bottoni durante il salvataggio.
 
-### Backend Logic
+### Backend & Database Optimization
 
-* **Query Scopes**: I filtri non sono "spaghetti code" nel controller, ma query dinamiche costruite passo passo.
+* **Full Text Search:** Per garantire scalabilità su grandi volumi di dati, ho implementato la ricerca nativa di PostgreSQL utilizzando indici **GIN** (`to_tsvector`), sostituendo la classica ricerca `ilike` che risulterebbe lenta su milioni di record.
 
-* **Tags**: Salvati come array JSON puro. Più performante di una tabella pivot per semplici etichette di testo.
+* **Optimized Eager Loading:** Ho ottimizzato le query Eloquent selezionando solo le colonne strettamente necessarie nelle relazioni (es. `with('category:id,name')`), riducendo il consumo di memoria e il traffico dati.
+
+* **Query Scopes:** I filtri non sono "spaghetti code" nel controller, ma query dinamiche costruite passo passo per mantenere il codice manutenibile.
+
+* **Tags:** Salvati come array JSON puro su PostgreSQL. Una scelta architetturale che evita tabelle pivot non necessarie per dati semplici.
 
 ## Testing:
 
@@ -126,3 +130,17 @@ L'applicazione include test per verificare la corretta funzionalità delle API. 
 ```bash
 docker compose exec laravel.test php artisan test
 ```
+
+## Note Tecniche
+
+### Performance in Ambiente Windows
+L'applicazione potrebbe mostrare una latenza percepibile (500ms - 1s) durante le chiamate API (es. caricamento categorie o salvataggio).
+Questo è un comportamento atteso e documentato dovuto all'overhead del file system bridge di **Docker Desktop su Windows (WSL2)**.
+*In un ambiente di produzione (Linux nativo) o spostando il sorgente nel file system WSL, le risposte sono nell'ordine dei millisecondi.*
+
+### Gestione Categorie (Scope v0.1)
+Per questa versione (v0.1), la gestione delle categorie è limitata a:
+* **Backend:** Supporto completo CRUD implementato.
+* **Frontend:** Visualizzazione e filtraggio.
+* **Dati:** Le categorie vengono popolate tramite **Seeder** (`php artisan db:seed`).
+* *Next Step:* L'interfaccia di creazione/modifica categorie potrebbe essere implementata nel frontend, il backend è già predisposto.

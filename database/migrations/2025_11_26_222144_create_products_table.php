@@ -14,10 +14,22 @@ return new class extends Migration
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->decimal('price', 10, 2);// 10 digits in total as max, 2 after the decimal point
-            $table->foreignId('category_id')->constrained()->onDelete('cascade');// Foreign key to categories table
+            
+            $table->decimal('price', 10, 2)->index(); // Index on price for filtering
+            
+            // FK with index (Best practice for Postgres)
+            $table->foreignId('category_id')
+                ->constrained()
+                ->onDelete('cascade'); 
+            // index for category_id
+            $table->index('category_id'); 
+
             $table->json('tags')->nullable();
+            
             $table->timestamps();
+            
+            // Index for sorting (created_at is created by timestamps())
+            $table->index('created_at');
         });
     }
 

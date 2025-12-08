@@ -12,29 +12,35 @@ class ProductController extends Controller
     // Product listing with search, filter, sort, and pagination
     public function index(Request $request)
     {
-        $query = Product::with('category');
+        $query = Product::with('category:id,name');
 
-        // 1. Ricerca Testuale
+        // Full Text Search
         if ($request->filled('search')) {
-            $query->where('name', 'ilike', '%' . $request->search . '%');
+            $searchTerm = $request->search;
+            
+            // Use to_tsquery with 'simple' (matches the created index)
+            // plainto_tsquery is safe: it handles spaces and strange characters by transforming them into a valid query
+            $query->whereRaw("to_tsvector('simple', name) @@ plainto_tsquery('simple', ?)", [$searchTerm])
+                // Optional: Order by relevance (most similar results first)
+                ->orderByRaw("ts_rank(to_tsvector('simple', name), plainto_tsquery('simple', ?)) DESC", [$searchTerm]);
         }
 
-        // 2. Filtro Categoria
+        // Category Filter
         if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
         }
 
-        // 3. Filtro Prezzo Minimo
+        // Minimum Price Filter
         if ($request->filled('min_price')) {
             $query->where('price', '>=', $request->min_price);
         }
 
-        // 4. Filtro Prezzo Massimo (AGGIUNTO ORA)
+        // Maximum Price Filter
         if ($request->filled('max_price')) {
             $query->where('price', '<=', $request->max_price);
         }
 
-        // 5. Ordinamento
+        // 5. Sorting
         $sortField = $request->input('sort_by', 'created_at');
         $sortDir = $request->input('sort_dir', 'desc');
         
