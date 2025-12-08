@@ -12,36 +12,36 @@ class ProductController extends Controller
     // Product listing with search, filter, sort, and pagination
     public function index(Request $request)
     {
-        $query = Product::with('category'); // Eager loading for performance
+        $query = Product::with('category');
 
-        // 1. Text Search (Case insensitive for Postgres)
-        if ($request->has('search')) {
+        // 1. Ricerca Testuale
+        if ($request->filled('search')) {
             $query->where('name', 'ilike', '%' . $request->search . '%');
         }
 
-        // 2. Category Filter
-        if ($request->has('category_id')) {
+        // 2. Filtro Categoria
+        if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
         }
 
-        // 3. Price Filter (Min/Max)
-        if ($request->has('min_price')) {
+        // 3. Filtro Prezzo Minimo
+        if ($request->filled('min_price')) {
             $query->where('price', '>=', $request->min_price);
         }
-        if ($request->has('max_price')) {
+
+        // 4. Filtro Prezzo Massimo (AGGIUNTO ORA)
+        if ($request->filled('max_price')) {
             $query->where('price', '<=', $request->max_price);
         }
 
-        // 4. Sorting
-        $sortField = $request->input('sort_by', 'created_at'); // Default: date
-        $sortDir = $request->input('sort_dir', 'desc'); // Default: descending
-
-        // Simple protection on sortable fields
+        // 5. Ordinamento
+        $sortField = $request->input('sort_by', 'created_at');
+        $sortDir = $request->input('sort_dir', 'desc');
+        
         if (in_array($sortField, ['price', 'created_at', 'name'])) {
             $query->orderBy($sortField, $sortDir);
         }
 
-        // 5. Pagination (10 per page by default)
         return response()->json($query->paginate(10));
     }
 

@@ -33,6 +33,50 @@ function useDebounce(value, delay) {
     return debouncedValue;
 }
 
+// Custom select component (for better accessibility and styling)
+const CustomSelect = ({ name, value, onChange, options, placeholder, icon }) => (
+    <div className="relative group w-full">
+        {/* Left Icon (Optional) */}
+        {icon && (
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                <span className="text-slate-400 group-focus-within:text-indigo-500 transition-colors">
+                    {icon}
+                </span>
+            </div>
+        )}
+
+        <select
+            name={name}
+            value={value}
+            onChange={onChange}
+            // Aggiunto 'bg-none' per rimuovere background nativi su alcuni browser
+            // Aggiunto 'truncate' per evitare che testi lunghi rompano il layout
+            className={`input-base appearance-none bg-none w-full cursor-pointer ${icon ? 'pl-10' : 'pl-4'} pr-10 text-slate-700 bg-white truncate`}
+        >
+            <option value="" className="text-slate-400">
+                {placeholder}
+            </option>
+            {options.map((opt) => (
+                <option key={opt.value} value={opt.value} className="text-slate-700 py-1">
+                    {opt.label}
+                </option>
+            ))}
+        </select>
+
+        {/* Custom Arrow (SVG) - Forced position absolute right */}
+        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none z-10">
+            <svg 
+                className="h-4 w-4 text-slate-400 group-hover:text-indigo-500 transition-colors" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+            >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+        </div>
+    </div>
+);
+
 export default function ProductList() {
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -42,9 +86,6 @@ export default function ProductList() {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
 
-    const [searchTerm, setSearchTerm] = useState('');
-    const debouncedSearch = useDebounce(searchTerm, 300);
-
     const [deleteModal, setDeleteModal] = useState({ 
         isOpen: false, 
         productId: null, 
@@ -52,12 +93,17 @@ export default function ProductList() {
     });
 
     const [filters, setFilters] = useState({
+        search: '',
         category_id: '',
         min_price: '',
+        max_price: '',
         sort_by: 'created_at',
         sort_dir: 'desc',
         page: 1
     });
+
+    // Debounced filters to avoid excessive API calls
+    const debouncedFilters = useDebounce(filters, 500);
 
     // Load categories once
     useEffect(() => {
@@ -67,12 +113,17 @@ export default function ProductList() {
     // --- Fetch Function (Moved out for reuse) ---
     // Using useCallback to avoid recreating the function on every render
     const fetchProducts = useCallback(async () => {
+
+        // Logical Validity Check for Price Range
+        if (debouncedFilters.min_price !== '' && debouncedFilters.max_price !== '' && 
+            parseFloat(debouncedFilters.min_price) > parseFloat(debouncedFilters.max_price)) {
+            return; 
+        }
+
         setIsLoading(true);
         try {
-            const params = {
-                ...filters,
-                search: debouncedSearch,
-            };
+            // Prepare parameters
+            const params = { ...debouncedFilters };
 
             // Cleaning parameters
             Object.keys(params).forEach(key => {
@@ -91,7 +142,7 @@ export default function ProductList() {
         } finally {
             setIsLoading(false);
         }
-    }, [filters, debouncedSearch]); 
+    }, [debouncedFilters]); 
 
     // Trigger Fetch when filters change
     useEffect(() => {
@@ -144,6 +195,7 @@ export default function ProductList() {
     
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
+        // Reset to first page on filter change
         setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
     };
 
@@ -155,22 +207,27 @@ export default function ProductList() {
         <div className="min-h-screen bg-slate-50 font-sans">
             
             {/* 1. Header*/}
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-700 pb-32 pt-10 shadow-lg">
+            <div className="bg-gradient-to-r from-indigo-700 via-indigo-600 to-purple-700 pb-32 pt-10 shadow-xl">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                            <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
-                                <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="flex items-center gap-4">
+                            <div className="bg-white/10 p-3 rounded-xl backdrop-blur-md border border-white/20 shadow-inner">
+                                <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                                 </svg>
                             </div>
                             <div>
-                                <h1 className="text-3xl font-bold text-white tracking-tight">Mini Catalogo</h1>
-                                <p className="text-indigo-100 text-sm mt-0.5 font-medium">Dashboard Gestione Prodotti</p>
+                                <h1 className="text-4xl font-extrabold text-white tracking-tight drop-shadow-md">
+                                    Mini Catalogo
+                                </h1>
+                                <p className="text-indigo-100 text-sm mt-1 font-medium flex items-center gap-2">
+                                    <span className="w-2 h-2 bg-green-400 rounded-full inline-block"></span>
+                                    Dashboard Gestione Prodotti
+                                </p>
                             </div>
                         </div>
-                        <button onClick={handleCreate} className="bg-white text-indigo-600 px-5 py-2.5 rounded-lg font-semibold shadow-lg hover:bg-indigo-50 transition-all flex items-center gap-2 transform hover:scale-105 active:scale-95">
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                        <button onClick={handleCreate} className="bg-white text-indigo-700 px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-indigo-50 transition-all flex items-center gap-2 transform hover:scale-105 active:scale-95 ring-4 ring-white/20">
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
                             Nuovo Prodotto
                         </button>
                     </div>
@@ -180,50 +237,119 @@ export default function ProductList() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-24">
                 
                 {/* 2. Filters */}
-                <div className="bg-white p-5 rounded-xl shadow-xl border border-slate-100 mb-8 grid grid-cols-1 md:grid-cols-4 gap-5 items-center">
-                    <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-                            </svg>
+                <div className="bg-white p-5 rounded-xl shadow-xl border border-slate-100 mb-8">
+
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-5 items-end">
+                        
+                        {/* 1. search */}
+                        <div className="w-full">
+                            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">
+                                Cerca
+                            </label>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <input type="text" placeholder="Nome, tag..." className="input-base pl-10" value={filters.search} onChange={handleFilterChange} />
+                            </div>
                         </div>
-                        <input type="text" placeholder="Cerca nel catalogo..." className="input-base pl-10" value={searchTerm} onChange={handleSearch} />
-                    </div>
 
-                    <select name="category_id" className="input-base cursor-pointer" value={filters.category_id} onChange={handleFilterChange}>
-                        <option value="">Tutte le Categorie</option>
-                        {categories.map(c => (
-                            <option key={c.id} value={c.id}>
-                                {c.name} ({c.products_count})
-                            </option>
-                        ))}
-                    </select>
-
-                    <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <span className="text-slate-400 group-focus-within:text-indigo-500 font-medium">€</span>
+                        {/* 2. Category */}
+                        <div className="w-full">
+                            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">
+                                Categoria
+                            </label>
+                            <CustomSelect 
+                                name="category_id"
+                                value={filters.category_id}
+                                onChange={handleFilterChange}
+                                placeholder="Tutte"
+                                options={categories.map(c => ({ 
+                                    value: c.id, 
+                                    label: `${c.name} (${c.products_count})` 
+                                }))}
+                            />
                         </div>
-                        <input type="number" name="min_price" placeholder="Prezzo Minimo" className="input-base pl-8" value={filters.min_price} onChange={handleFilterChange} />
-                    </div>
 
-                    <select name="sort_by" className="input-base cursor-pointer" value={filters.sort_by} onChange={handleFilterChange}>
-                        <option value="created_at">📅 Più recenti</option>
-                        <option value="price">💰 Prezzo</option>
-                        <option value="name">🔤 Nome (A-Z)</option>
-                    </select>
+                        {/* 3. Price range (New Style with "Internal Prefix") */}
+                        <div className="w-full">
+                            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">
+                                Fascia Prezzo
+                            </label>
+                            <div className="flex items-center gap-2">
+                                {/* MIN */}
+                                <div className="relative group w-1/2">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span className="text-[10px] font-bold text-slate-400 group-focus-within:text-indigo-500">MIN €</span>
+                                    </div>
+                                    <input 
+                                        type="number" 
+                                        name="min_price" 
+                                        min="0"
+                                        className={`input-base pl-12 ${ // Increased padding to fit the text
+                                            filters.min_price !== '' && filters.max_price !== '' && parseFloat(filters.min_price) > parseFloat(filters.max_price)
+                                            ? '!border-red-500 !text-red-600 focus:!ring-red-500/20' 
+                                            : ''
+                                        }`}
+                                        value={filters.min_price} 
+                                        onChange={handleFilterChange} 
+                                    />
+                                </div>
+                                <span className="text-slate-300">-</span>
+                                {/* Max */}
+                                <div className="relative group w-1/2">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span className="text-[10px] font-bold text-slate-400 group-focus-within:text-indigo-500">MAX €</span>
+                                    </div>
+                                    <input 
+                                        type="number" 
+                                        name="max_price" 
+                                        min="0"
+                                        className={`input-base pl-12 ${ // Increased padding
+                                            filters.min_price !== '' && filters.max_price !== '' && parseFloat(filters.min_price) > parseFloat(filters.max_price)
+                                            ? '!border-red-500 !text-red-600 focus:!ring-red-500/20' 
+                                            : ''
+                                        }`}
+                                        value={filters.max_price} 
+                                        onChange={handleFilterChange} 
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 4. Sorting */}
+                        <div className="w-full">
+                            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">
+                                Ordina per
+                            </label>
+                            <CustomSelect 
+                                name="sort_by"
+                                value={filters.sort_by}
+                                onChange={handleFilterChange}
+                                icon={<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" /></svg>}
+                                placeholder="Default"
+                                options={[
+                                    { value: 'created_at', label: '📅 Data Creazione' },
+                                    { value: 'price', label: '💰 Prezzo' },
+                                    { value: 'name', label: '🔤 Nome (A-Z)' }
+                                ]}
+                            />
+                        </div>
+                    </div>
                 </div>
 
                 {/* 3. Table */}
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-10">
                     {isLoading ? (
-                        <div className="p-6 space-y-6 animate-pulse">
-                             {[...Array(5)].map((_, i) => (
-                                <div key={i} className="flex items-center space-x-6 border-b border-slate-50 pb-6 last:border-0">
-                                    <div className="h-10 w-10 bg-slate-200 rounded-lg"></div>
-                                    <div className="h-4 bg-slate-200 rounded w-1/4"></div>
-                                    <div className="h-4 bg-slate-200 rounded w-1/6"></div>
-                                </div>
-                            ))}
+                        /* Spinner */
+                        <div className="flex flex-col items-center justify-center h-[300px]">
+                            <svg className="animate-spin h-10 w-10 text-indigo-600 mb-3" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <p className="text-slate-500 text-sm font-medium animate-pulse">Aggiornamento lista...</p>
                         </div>
                     ) : (
                         <>
@@ -274,7 +400,7 @@ export default function ProductList() {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                                                    <div className="flex items-center justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                                    <div className="flex items-center justify-end gap-2">
                                                         <button onClick={() => handleEdit(p.id)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all" title="Modifica">
                                                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                                         </button>
@@ -292,7 +418,7 @@ export default function ProductList() {
                                                     </div>
                                                     <h3 className="text-base font-semibold text-slate-900">Nessun prodotto trovato</h3>
                                                     <p className="text-slate-500 mt-1 max-w-xs mx-auto">Non ci sono prodotti che corrispondono ai filtri selezionati.</p>
-                                                    <button onClick={() => setFilters({...filters, search: '', category_id: '', min_price: ''})} className="mt-4 text-indigo-600 font-medium hover:underline">
+                                                    <button onClick={() => setFilters({...filters, search: '', category_id: '', min_price: '', max_price: ''})} className="mt-4 text-indigo-600 font-medium hover:underline">
                                                         Resetta filtri
                                                     </button>
                                                 </td>

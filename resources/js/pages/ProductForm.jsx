@@ -5,6 +5,7 @@ export default function ProductForm({ productId, onSuccess, onCancel }) {
     const [categories, setCategories] = useState([]);
     const [errors, setErrors] = useState({});
     const [isSaving, setIsSaving] = useState(false);
+    const [isCategoriesLoading, setIsCategoriesLoading] = useState(true);
     
     // Form state
     const [formData, setFormData] = useState({
@@ -16,10 +17,13 @@ export default function ProductForm({ productId, onSuccess, onCancel }) {
 
     useEffect(() => {
         const fetchData = async () => {
+            setIsCategoriesLoading(true);
             try {
                 const catRes = await api.getCategories();
                 setCategories(catRes.data);
+                setIsCategoriesLoading(false);
 
+                // If there's a productId, load product data
                 if (productId) {
                     const prodRes = await api.getProduct(productId);
                     const p = prodRes.data;
@@ -32,6 +36,7 @@ export default function ProductForm({ productId, onSuccess, onCancel }) {
                 }
             } catch (error) {
                 console.error("Error loading form data", error);
+                setIsCategoriesLoading(false);
             }
         };
         fetchData();
@@ -117,14 +122,31 @@ export default function ProductForm({ productId, onSuccess, onCancel }) {
 
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1.5">Categoria</label>
-                            <select 
-                                className={`input-base h-10 text-sm bg-white ${errors.category_id ? '!border-red-300 focus:!border-red-500 focus:!ring-red-500/20' : ''}`}
-                                value={formData.category_id}
-                                onChange={e => setFormData({...formData, category_id: e.target.value})}
-                            >
-                                <option value="">Seleziona...</option>
-                                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </select>
+                            <div className="relative">
+                                <select 
+                                    className={`input-base h-10 text-sm bg-white ${errors.category_id ? '!border-red-300 focus:!border-red-500 focus:!ring-red-500/20' : ''}`}
+                                    value={formData.category_id}
+                                    onChange={e => setFormData({...formData, category_id: e.target.value})}
+                                    disabled={isCategoriesLoading} // Disabilita durante il caricamento
+                                >
+                                    <option value="">Seleziona...</option>
+                                    {isCategoriesLoading ? (
+                                        <option disabled>Caricamento categorie...</option>
+                                    ) : (
+                                        categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)
+                                    )}
+                                </select>
+                                
+                                {/* Spinner opzionale dentro la select se vuoi essere super fancy */}
+                                {isCategoriesLoading && (
+                                    <div className="absolute right-8 top-2.5">
+                                        <svg className="animate-spin h-4 w-4 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </div>
+                                )}
+                            </div>
                             {errors.category_id && <p className="text-red-500 text-xs mt-1">{errors.category_id[0]}</p>}
                         </div>
                     </div>
