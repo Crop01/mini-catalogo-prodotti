@@ -93,7 +93,7 @@ docker compose exec laravel.test npm install
 docker compose exec laravel.test npm run build
 ```
 
-Aprire il browser su: [http://localhost](http://localhost:8000)
+Aprire il browser su: [http://localhost:8000](http://localhost:8000)
 
 ## Dettagli implementativi
 
