@@ -129,8 +129,8 @@ L'applicazione potrebbe mostrare una latenza percepibile (500ms - 1s) durante le
 Questo è un comportamento atteso e documentato dovuto all'overhead del file system bridge di **Docker Desktop su Windows (WSL2)**.
 *In un ambiente di produzione (Linux nativo) o spostando il sorgente nel file system WSL, le risposte sono nell'ordine dei millisecondi.*
 
-### Gestione Categorie (Scope v0.1.3)
-Per questa versione (v0.1.3), la gestione delle categorie è limitata a:
+### Gestione Categorie (Scope v0.1.4)
+Per questa versione (v0.1.4), la gestione delle categorie è limitata a:
 * **Backend:** Supporto completo CRUD implementato.
 * **Frontend:** Visualizzazione e filtraggio.
 * **Dati:** Le categorie vengono popolate tramite **Seeder** (`php artisan db:seed`).
