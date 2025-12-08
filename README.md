@@ -57,10 +57,10 @@ cp .env.example .env
 Avviare il Container:
 
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
 
-Installa le dipendenze PHP:
+Installa le dipendenze PHP, popolando la cartella /vendor all'interno del volume Docker:
 
 ```bash
 docker compose exec laravel.test composer install
@@ -80,26 +80,17 @@ Lanciare le migrazioni e il seeder (crea 50 prodotti finti per testare subito i 
 docker compose exec laravel.test php artisan migrate --seed
 ```
 
-### 3. Avvio frontend (Nota per Windows)
+### 3. Compilazione Frontend (Asset Statici)
 
-Due modi per far girare il frontend (Vite).
-
-#### Metodo A: Sviluppo Locale (Consigliato su Windows)
-
-Docker su Windows (WSL2) può essere lento nel notificare le modifiche ai file (Hot Reload). Per sviluppare velocemente, consiglio di lanciare Node in locale:
+Per visualizzare correttamente l'interfaccia grafica è necessario compilare gli asset (CSS/JS).
+Eseguire questi due comandi in sequenza per far svolgere tutto al container Docker:
 
 ```bash
-npm install
-npm run dev
-```
-
-#### Metodo B: Full Docker
-
-Se non vuoi installare Node sul tuo PC:
-
-```bash
+# 1. Installa le dipendenze JS nel container
 docker compose exec laravel.test npm install
-docker compose exec laravel.test npm run dev
+
+# 2. Compila i file per la produzione
+docker compose exec laravel.test npm run build
 ```
 
 Aprire il browser su: [http://localhost](http://localhost)
@@ -138,8 +129,8 @@ L'applicazione potrebbe mostrare una latenza percepibile (500ms - 1s) durante le
 Questo è un comportamento atteso e documentato dovuto all'overhead del file system bridge di **Docker Desktop su Windows (WSL2)**.
 *In un ambiente di produzione (Linux nativo) o spostando il sorgente nel file system WSL, le risposte sono nell'ordine dei millisecondi.*
 
-### Gestione Categorie (Scope v0.1.2)
-Per questa versione (v0.1.2), la gestione delle categorie è limitata a:
+### Gestione Categorie (Scope v0.1.3)
+Per questa versione (v0.1.3), la gestione delle categorie è limitata a:
 * **Backend:** Supporto completo CRUD implementato.
 * **Frontend:** Visualizzazione e filtraggio.
 * **Dati:** Le categorie vengono popolate tramite **Seeder** (`php artisan db:seed`).
