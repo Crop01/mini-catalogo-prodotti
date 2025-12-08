@@ -1,50 +1,128 @@
-Mini Catalogo Prodotti
-Obiettivo: realizzare una piccola applicazione full-stack (frontend + backend + database) per la gestione di un catalogo prodotti con categorie.
+# Mini Catalogo Prodotti - Full Stack Application
 
-Requisiti
-Funzionalità
-Prodotti
+Progetto Full-Stack per la gestione di un inventario prodotti.
+L'obiettivo era creare un'architettura pulita, scalabile e con una UX curata, andando oltre il classico "CRUD scolastico".
 
-Campi minimi: id, name, price, category_id, tags, created_at.
-Operazioni: list, get by id, create, update, delete.
-List: ricerca testuale, filtro per categoria, filtro per prezzo minimo/massimo, ordinamento per prezzo o data di creazione, paginazione.
-Validazioni: name obbligatorio; price ≥ 0; category_id valido se presente.
-Categorie
+## Stack Tecnologico
 
-Campi minimi: id, name.
-Operazioni: list, create.
-Frontend
+Ho selezionato questo stack per bilanciare velocità di sviluppo e robustezza.
 
-Vista elenco prodotti con ricerca/filtri/ordinamento/paginazione.
-Form creazione/modifica prodotto.
-Visualizzazione chiara degli stati (caricamento/errore/successo).
-Backend
+* **Backend: Laravel 12**
+  
+  La scelta standard per API REST solide. Ho sfruttato le `FormRequest` per validare i dati fuori dai controller e gli `API Resources` per standardizzare le risposte JSON.
 
-API REST con routing chiaro e status code coerenti.
-Filtri, ordinamento e paginazione gestiti lato server.
-Database
+* **Database: PostgreSQL**
+  
+  Come da consegna.
 
-Persistenza relazionale (PostgreSQL consigliato; in alternativa SQLite).
-Migrazioni o script di inizializzazione.
-Avvio
+* **Frontend: React 19 + Vite**
+  
+  Integrato nell'ecosistema Laravel.
+  * **Axios:** Utilizzato come client HTTP per gestire le chiamate asincrone verso le API Backend in modo pulito e per intercettare gli errori.
+  * **React Hooks:** Gestione dello stato e degli effetti collaterali (es. debounce per la ricerca).
 
-Preferibile utilizzo di Docker/Docker Compose per avvio rapido (app + DB).
-Variabili di ambiente tramite file dedicato (es. .env.example).
-Consegna (obbligatoria su GitHub)
-Pubblica il progetto in una repository GitHub (pubblica o privata con accesso fornito su richiesta).
-Includi:
-Codice frontend e backend.
-README.md con istruzioni di avvio (Docker e avvio locale), configurazione variabili, comandi per migrazioni/seed, e comandi test.
-docker-compose.yml e relativi Dockerfile.
-Migrazioni o script DB; file .env.example.
-Usa commit granulari con messaggi chiari; evita un unico commit cumulativo.
-Tagga una release (es. v0.1) o fornisci branch di consegna dedicata.
-Vincoli
-Stack: a scelta (linguaggi e framework liberi).
-Qualità attesa: struttura chiara, coerenza stilistica, gestione errori, documentazione minima essenziale.
-Criteri di valutazione
-Completezza funzionale
-Qualità e organizzazione del codice
-Correttezza API e validazioni
-UX essenziale del frontend
-Developer Experience (README, avvio rapido, migrazioni/test di base)
+* **UI/UX: Tailwind CSS V3**
+  
+  Design custom ispirato alle dashboard SaaS moderne (es. Stripe). Ho evitato librerie di componenti pesanti preferendo HTML.
+
+* **DevOps: Docker (Sail)**
+  
+  Per avere un ambiente isolato che gira identico su qualsiasi macchina.
+
+## Guida all'Avvio
+
+Il progetto è configurato per girare interamente su Docker, ma ho predisposto una modalità "ibrida" per migliorare la velocità di sviluppo del frontend su Windows.
+
+### Prerequisiti
+
+* Docker Desktop (attivo)
+* Node.js (opzionale, per sviluppo frontend locale veloce su Windows)
+
+### 1. Setup Backend & Database
+
+Clona la repository e avvia i container:
+
+```bash
+# Clona il repository
+git clone <URL>
+cd mini-catalogo
+```
+
+Crea il file di configurazione (già pronto per Docker):
+
+```bash
+cp .env.example .env
+```
+
+Avviare il Container:
+
+```bash
+docker compose up -d
+```
+
+Installa le dipendenze PHP:
+
+```bash
+docker compose exec laravel.test composer install
+```
+
+Genera la key dell'applicazione:
+
+```bash
+docker compose exec laravel.test php artisan key:generate
+```
+
+### 2. Database e dati di prova
+
+Lanciare le migrazioni e il seeder (crea 50 prodotti finti per testare subito i filtri):
+
+```bash
+docker compose exec laravel.test php artisan migrate --seed
+```
+
+### 3. Avvio frontend (Nota per Windows)
+
+Due modi per far girare il frontend (Vite).
+
+#### Metodo A: Sviluppo Locale (Consigliato su Windows)
+
+Docker su Windows (WSL2) può essere lento nel notificare le modifiche ai file (Hot Reload). Per sviluppare velocemente, consiglio di lanciare Node in locale:
+
+```bash
+npm install
+npm run dev
+```
+
+#### Metodo B: Full Docker
+
+Se non vuoi installare Node sul tuo PC:
+
+```bash
+docker compose exec laravel.test npm install
+docker compose exec laravel.test npm run dev
+```
+
+Aprire il browser su: [http://localhost](http://localhost)
+
+## Dettagli implementativi
+
+### Performance & UX
+
+* **Debounce**: Ho notato che la ricerca live appesantiva il server. Ho implementato un debounce di 500ms su tutti i filtri: la chiamata parte solo quando l'utente smette di scrivere.
+
+* **Validazione Prezzi**: Il frontend impedisce chiamate API inutili se il prezzo Minimo è maggiore del Massimo, segnalandolo visivamente (bordo rosso) senza interrompere la digitazione.
+
+* **Feedback**: Niente schermate bianche o bloccate. Ho usato indicatori di caricamento (Spinner) centrali per la tabella e integrati nei bottoni durante il salvataggio.
+
+### Backend Logic
+
+* **Query Scopes**: I filtri non sono "spaghetti code" nel controller, ma query dinamiche costruite passo passo.
+
+* **Tags**: Salvati come array JSON puro. Più performante di una tabella pivot per semplici etichette di testo.
+
+## Testing:
+
+L'applicazione include test per verificare la corretta funzionalità delle API. Per lanciarli:
+```bash
+docker compose exec laravel.test php artisan test
+```

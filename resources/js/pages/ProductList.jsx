@@ -247,12 +247,7 @@ export default function ProductList() {
                                 Cerca
                             </label>
                             <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <svg className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" clipRule="evenodd" />
-                                    </svg>
-                                </div>
-                                <input type="text" placeholder="Nome, tag..." className="input-base pl-10" value={filters.search} onChange={handleFilterChange} />
+                                <input type="text" placeholder="Nome, tag..." className="input-base" value={filters.search} onChange={handleFilterChange} />
                             </div>
                         </div>
 
