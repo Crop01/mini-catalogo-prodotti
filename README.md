@@ -9,7 +9,7 @@ Ho selezionato questo stack per bilanciare velocità di sviluppo e robustezza.
 
 * **Backend: Laravel 12**
   
-  La scelta standard per API REST solide. Ho sfruttato le `FormRequest` per validare i dati fuori dai controller e gli `API Resources` per standardizzare le risposte JSON.
+  La scelta standard per API REST. Ho sfruttato le `FormRequest` per validare i dati fuori dai controller e gli `API Resources` per standardizzare le risposte JSON.
 
 * **Database: PostgreSQL**
   
@@ -31,7 +31,7 @@ Ho selezionato questo stack per bilanciare velocità di sviluppo e robustezza.
 
 ## Guida all'Avvio
 
-Il progetto è configurato per girare interamente su Docker, ma ho predisposto una modalità "ibrida" per migliorare la velocità di sviluppo del frontend su Windows.
+Il progetto è configurato per girare interamente su Docker, ma durante lo sviluppo ho predisposto una modalità "ibrida" per migliorare la velocità del frontend su Windows.
 
 ### Prerequisiti
 
@@ -40,7 +40,7 @@ Il progetto è configurato per girare interamente su Docker, ma ho predisposto u
 
 ### 1. Setup Backend & Database
 
-Clona la repository e avvia i container:
+Clonare la repository e avvia i container:
 
 ```bash
 # Clona il repository
@@ -48,7 +48,7 @@ git clone <URL>
 cd mini-catalogo
 ```
 
-Crea il file di configurazione (già pronto per Docker):
+Creare il file di configurazione (già pronto per Docker):
 
 ```bash
 cp .env.example .env
@@ -60,13 +60,13 @@ Avviare il Container:
 docker compose up -d --build
 ```
 
-Installa le dipendenze PHP, popolando la cartella /vendor all'interno del volume Docker:
+Installare le dipendenze PHP, popolando la cartella /vendor all'interno del volume Docker:
 
 ```bash
 docker compose exec laravel.test composer install
 ```
 
-Genera la key dell'applicazione:
+Generare la key dell'applicazione:
 
 ```bash
 docker compose exec laravel.test php artisan key:generate
